@@ -54,7 +54,7 @@
 
       <!-- Visualization Area -->
       <AnchorPane fx:id="visualizationPane" layoutX="456.0" layoutY="73.0" prefHeight="600.0" prefWidth="800.0">
-            
+
         </AnchorPane>
    </children>
 </AnchorPane>
