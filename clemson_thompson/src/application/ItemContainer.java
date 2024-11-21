@@ -6,6 +6,8 @@ public class ItemContainer implements FarmComponent {
     private String name;
     private List<FarmComponent> children = new ArrayList<>();
     private int x, y;
+    private int width = 50;
+    private int height = 50;
 
     public ItemContainer(String name, int x, int y) {
         this.name = name;
@@ -15,10 +17,21 @@ public class ItemContainer implements FarmComponent {
 
     public int getX() { return x; }
     public int getY() { return y; }
+    
     public void setCoordinates(int x, int y) {
         this.x = x;
         this.y = y;
     }
+    
+    public int getWidth() { return width; }
+    public int getHeight() { return height; }
+    
+    public void setDimensions(int width, int height) {
+        this.width = width;
+        this.height = height;
+    }
+    
+    
 
 
     public ItemContainer(String name) {

@@ -2,6 +2,7 @@ package application;
 
 import java.net.URL;
 
+
 import java.util.ResourceBundle;
 import java.util.Optional;
 
@@ -21,6 +22,9 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Circle;
 import javafx.scene.paint.Color;
+import java.util.Map;
+import java.util.HashMap;
+
 
 
 
@@ -30,8 +34,10 @@ public class FarmController implements Initializable {
 	
 	private static final int DEFAULT_X = 100;
 	private static final int DEFAULT_Y = 100;
-	private static final int DEFAULT_WIDTH = 50; // If items have dimensions
+	private static final int DEFAULT_WIDTH = 50;
 	private static final int DEFAULT_HEIGHT = 50;
+	private Map<FarmComponent, javafx.scene.Node> componentVisuals = new HashMap<>();
+
 
 
     @FXML
@@ -74,77 +80,23 @@ public class FarmController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        // Create the root container "Farm"
         rootContainer = new ItemContainer("Farm");
+
+        // Create the TreeView root node and set the root container as its value
         TreeItem<FarmComponent> rootNode = new TreeItem<>(rootContainer);
-        rootNode.setExpanded(true);
+        rootNode.setExpanded(true); // Ensure the root node is always expanded
+
+        // Set the TreeView root to the farm root node
         listofFarm.setRoot(rootNode);
         listofFarm.setShowRoot(true);
-        
-     // Set up the root container
-        ItemContainer rootContainer = new ItemContainer("Farm");
-        TreeItem<FarmComponent> farm = new TreeItem<>(rootContainer);
 
-        // Create Barn and add its sub-components
-        ItemContainer barnContainer = new ItemContainer("Barn");
-        TreeItem<FarmComponent> barn = new TreeItem<>(barnContainer);
+        // Clear visualization pane (if needed, for consistency)
+        visualizationPane.getChildren().clear();
 
-        ItemContainer liveStockContainer = new ItemContainer("LiveStock");
-        TreeItem<FarmComponent> liveStock = new TreeItem<>(liveStockContainer);
-        Item animal = new Item("Cow");
-        TreeItem<FarmComponent> animalItem = new TreeItem<>(animal);
-        liveStockContainer.add(animal);
-        liveStock.getChildren().add(animalItem);
-
-        ItemContainer toolsContainer = new ItemContainer("Tools");
-        TreeItem<FarmComponent> tools = new TreeItem<>(toolsContainer);
-        Item instrument = new Item("Axe");
-        TreeItem<FarmComponent> instrumentItem = new TreeItem<>(instrument);
-        toolsContainer.add(instrument);
-        tools.getChildren().add(instrumentItem);
-
-        ItemContainer harvestContainer = new ItemContainer("Harvested Crops");
-        TreeItem<FarmComponent> harvest = new TreeItem<>(harvestContainer);
-        Item harvested = new Item("Tomatoes");
-        TreeItem<FarmComponent> harvestedItem = new TreeItem<>(harvested);
-        harvestContainer.add(harvested);
-        harvest.getChildren().add(harvestedItem);
-
-        barnContainer.add(liveStockContainer);
-        barnContainer.add(toolsContainer);
-        barnContainer.add(harvestContainer);
-        barn.getChildren().addAll(liveStock, tools, harvest);
-
-        // Create Crops
-        ItemContainer cropsContainer = new ItemContainer("Crops");
-        TreeItem<FarmComponent> crops = new TreeItem<>(cropsContainer);
-        Item planted = new Item("Potatoes");
-        TreeItem<FarmComponent> plantedItem = new TreeItem<>(planted);
-        cropsContainer.add(planted);
-        crops.getChildren().add(plantedItem);
-
-        // Create Equipment
-        ItemContainer equipmentContainer = new ItemContainer("Equipment");
-        TreeItem<FarmComponent> equipment = new TreeItem<>(equipmentContainer);
-        Item tractor = new Item("Tractor");
-        TreeItem<FarmComponent> tractorItem = new TreeItem<>(tractor);
-        equipmentContainer.add(tractor);
-        equipment.getChildren().add(tractorItem);
-
-        // Create Control Center (Drone)
-        Item controlCenter = new Item("Drone");
-        TreeItem<FarmComponent> controlCenterItem = new TreeItem<>(controlCenter);
-
-        // Add main components to the farm root
-        rootContainer.add(barnContainer);
-        rootContainer.add(cropsContainer);
-        rootContainer.add(equipmentContainer);
-        rootContainer.add(controlCenter);
-        farm.getChildren().addAll(barn, crops, equipment, controlCenterItem);
-
-        // Set the root of the TreeView
-        listofFarm.setRoot(farm);
-
+        System.out.println("TreeView initialized with only the root 'Farm'.");
     }
+
     
     @FXML
     private AnchorPane visualizationPane;
@@ -162,15 +114,16 @@ public class FarmController implements Initializable {
             result.ifPresent(name -> {
                 // Create the new item with default coordinates
                 Item newItem = new Item(name, DEFAULT_X, DEFAULT_Y);
-                
+
                 if (selectedItem.getValue() instanceof ItemContainer) {
                     // Add to the selected container
                     ((ItemContainer) selectedItem.getValue()).add(newItem);
                     selectedItem.getChildren().add(new TreeItem<>(newItem));
 
-                    // Add visual representation in the visualizationPane
+                    // Create the visual representation and store it in the map
                     Circle itemVisual = new Circle(DEFAULT_X, DEFAULT_Y, 10, Color.GREEN);
                     visualizationPane.getChildren().add(itemVisual);
+                    componentVisuals.put(newItem, itemVisual); // Map the item to its visual
                 } else {
                     showAlert("Invalid Selection", "You can only add items to an item container.");
                 }
@@ -199,11 +152,14 @@ public class FarmController implements Initializable {
                     ((ItemContainer) selectedItem.getValue()).add(newContainer);
                     selectedItem.getChildren().add(new TreeItem<>(newContainer));
 
-                    // Add visual representation in the visualizationPane
-                    Rectangle containerVisual = new Rectangle(DEFAULT_X, DEFAULT_Y, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+                    // Create the visual representation and store it in the map
+                    Rectangle containerVisual = new Rectangle(
+                        DEFAULT_X, DEFAULT_Y, DEFAULT_WIDTH, DEFAULT_HEIGHT
+                    );
                     containerVisual.setFill(Color.LIGHTBLUE);
                     containerVisual.setStroke(Color.BLUE);
                     visualizationPane.getChildren().add(containerVisual);
+                    componentVisuals.put(newContainer, containerVisual); // Map the container to its visual
                 } else {
                     showAlert("Invalid Selection", "You can only add item containers to an existing container.");
                 }
@@ -212,6 +168,7 @@ public class FarmController implements Initializable {
             showAlert("No container selected", "Please select a container to add an item-container.");
         }
     }
+
 
     // Method to rename a selected item in the TreeView
     @FXML
@@ -238,11 +195,43 @@ public class FarmController implements Initializable {
     private void changeLocation(ActionEvent event) {
         TreeItem<FarmComponent> selectedItem = listofFarm.getSelectionModel().getSelectedItem();
         if (selectedItem != null) {
-            System.out.println("Changing location for: " + selectedItem.getValue().getName());
+            TextInputDialog dialog = new TextInputDialog();
+            dialog.setTitle("Change Location");
+            dialog.setHeaderText(null);
+            dialog.setContentText("Enter new coordinates (x, y):");
+
+            Optional<String> result = dialog.showAndWait();
+            result.ifPresent(input -> {
+                try {
+                    String[] coordinates = input.split(",");
+                    int x = Integer.parseInt(coordinates[0].trim());
+                    int y = Integer.parseInt(coordinates[1].trim());
+
+                    FarmComponent selectedComponent = selectedItem.getValue();
+                    if (selectedComponent instanceof Item) {
+                        ((Item) selectedComponent).setCoordinates(x, y);
+                    } else if (selectedComponent instanceof ItemContainer) {
+                        ((ItemContainer) selectedComponent).setCoordinates(x, y);
+                    }
+
+                    // Update the existing visual
+                    javafx.scene.Node visual = componentVisuals.get(selectedComponent);
+                    if (visual instanceof Circle) {
+                        ((Circle) visual).setCenterX(x);
+                        ((Circle) visual).setCenterY(y);
+                    } else if (visual instanceof Rectangle) {
+                        ((Rectangle) visual).setX(x);
+                        ((Rectangle) visual).setY(y);
+                    }
+                } catch (Exception e) {
+                    showAlert("Invalid Input", "Please enter valid integer coordinates in the format x,y.");
+                }
+            });
         } else {
-            showAlert("No item selected", "Please select an item to change its location.");
+            showAlert("No Item Selected", "Please select an item to change its location.");
         }
     }
+
 
     // Method to change the price of a selected item
     @FXML
@@ -259,34 +248,39 @@ public class FarmController implements Initializable {
     @FXML
     private void changeDimensions(ActionEvent event) {
         TreeItem<FarmComponent> selectedItem = listofFarm.getSelectionModel().getSelectedItem();
-        if (selectedItem != null) {
-            TextInputDialog dialog = new TextInputDialog();
-            dialog.setTitle("Change Coordinates");
-            dialog.setHeaderText(null);
-            dialog.setContentText("Enter new coordinates (x,y):");
 
-            Optional<String> result = dialog.showAndWait();
-            result.ifPresent(coordinates -> {
-                String[] xy = coordinates.split(",");
-                if (xy.length == 2) {
+        if (selectedItem != null) {
+            if (selectedItem.getValue() instanceof ItemContainer) {
+                TextInputDialog dialog = new TextInputDialog();
+                dialog.setTitle("Change Dimensions");
+                dialog.setHeaderText(null);
+                dialog.setContentText("Enter new dimensions (width, height):");
+
+                Optional<String> result = dialog.showAndWait();
+                result.ifPresent(input -> {
                     try {
-                        int x = Integer.parseInt(xy[0].trim());
-                        int y = Integer.parseInt(xy[1].trim());
-                        if (selectedItem.getValue() instanceof Item) {
-                            ((Item) selectedItem.getValue()).setCoordinates(x, y);
-                        } else if (selectedItem.getValue() instanceof ItemContainer) {
-                            ((ItemContainer) selectedItem.getValue()).setCoordinates(x, y);
+                        String[] dimensions = input.split(",");
+                        int width = Integer.parseInt(dimensions[0].trim());
+                        int height = Integer.parseInt(dimensions[1].trim());
+
+                        ItemContainer container = (ItemContainer) selectedItem.getValue();
+                        container.setDimensions(width, height);
+
+                        // Update the existing visual
+                        javafx.scene.Node visual = componentVisuals.get(container);
+                        if (visual instanceof Rectangle) {
+                            ((Rectangle) visual).setWidth(width);
+                            ((Rectangle) visual).setHeight(height);
                         }
-                        updateVisualization();
                     } catch (NumberFormatException e) {
-                        showAlert("Invalid Input", "Coordinates must be integers.");
+                        showAlert("Invalid Input", "Please enter valid integer dimensions in the format width,height.");
                     }
-                } else {
-                    showAlert("Invalid Input", "Please enter coordinates in the format x,y.");
-                }
-            });
+                });
+            } else {
+                showAlert("Invalid Selection", "Only item containers can have their dimensions changed.");
+            }
         } else {
-            showAlert("No item selected", "Please select an item to change its coordinates.");
+            showAlert("No Item Selected", "Please select an item-container to change its dimensions.");
         }
     }
 
@@ -295,11 +289,21 @@ public class FarmController implements Initializable {
     @FXML
     private void deleteItem(ActionEvent event) {
         TreeItem<FarmComponent> selectedItem = listofFarm.getSelectionModel().getSelectedItem();
+
         if (selectedItem != null && selectedItem.getParent() != null) {
-            ((ItemContainer) selectedItem.getParent().getValue()).remove(selectedItem.getValue());
+            if (selectedItem.getParent().getValue() instanceof ItemContainer) {
+                ItemContainer parentContainer = (ItemContainer) selectedItem.getParent().getValue();
+                parentContainer.remove(selectedItem.getValue());
+            }
+
+            javafx.scene.Node visual = componentVisuals.remove(selectedItem.getValue());
+            if (visual != null) {
+                visualizationPane.getChildren().remove(visual);
+            }
+
             selectedItem.getParent().getChildren().remove(selectedItem);
         } else {
-            showAlert("No item selected", "Please select an item to delete.");
+            showAlert("No Item Selected", "Please select an item to delete.");
         }
     }
 
@@ -312,6 +316,69 @@ public class FarmController implements Initializable {
             showAlert("No item selected", "Please select an item from the list.");
         }
     }
+    
+    private void updateVisualization() { 
+        visualizationPane.getChildren().clear();
+
+        renderComponent(rootContainer);
+    }
+
+    private void renderComponent(FarmComponent component) {
+        if (component instanceof Item) {
+            // Render Item as a circle
+            Item item = (Item) component;
+
+            // Get the existing visual from the map
+            Circle itemVisual = (Circle) componentVisuals.get(component);
+            if (itemVisual == null) {
+                // Create a new circle if not already present
+                itemVisual = new Circle(item.getX(), item.getY(), 10, Color.GREEN);
+                componentVisuals.put(component, itemVisual);
+                visualizationPane.getChildren().add(itemVisual);
+            } else {
+                // Update the existing circle's position
+                itemVisual.setCenterX(item.getX());
+                itemVisual.setCenterY(item.getY());
+                // Ensure the visual is added to the pane
+                if (!visualizationPane.getChildren().contains(itemVisual)) {
+                    visualizationPane.getChildren().add(itemVisual);
+                }
+            }
+
+        } else if (component instanceof ItemContainer) {
+            // Render ItemContainer as a rectangle
+            ItemContainer container = (ItemContainer) component;
+
+            // Get the existing visual from the map
+            Rectangle containerVisual = (Rectangle) componentVisuals.get(component);
+            if (containerVisual == null) {
+                // Create a new rectangle if not already present
+                containerVisual = new Rectangle(
+                    container.getX(), container.getY(), container.getWidth(), container.getHeight()
+                );
+                containerVisual.setFill(Color.LIGHTBLUE);
+                containerVisual.setStroke(Color.BLUE);
+                componentVisuals.put(component, containerVisual);
+                visualizationPane.getChildren().add(containerVisual);
+            } else {
+                // Update the existing rectangle's position and size
+                containerVisual.setX(container.getX());
+                containerVisual.setY(container.getY());
+                containerVisual.setWidth(container.getWidth());
+                containerVisual.setHeight(container.getHeight());
+                // Ensure the visual is added to the pane
+                if (!visualizationPane.getChildren().contains(containerVisual)) {
+                    visualizationPane.getChildren().add(containerVisual);
+                }
+            }
+
+            // Recursively render children
+            for (FarmComponent child : container.getChildren()) {
+                renderComponent(child);
+            }
+        }
+    }
+
 
     // Method to handle drone actions based on radio button selection
     @FXML
