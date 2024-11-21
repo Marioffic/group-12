@@ -1,6 +1,7 @@
 package application;
 
 import java.net.URL;
+
 import java.util.ResourceBundle;
 import java.util.Optional;
 
@@ -16,8 +17,22 @@ import javafx.scene.control.TreeView;
 import javafx.event.ActionEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Circle;
+import javafx.scene.paint.Color;
+
+
+
+
 
 public class FarmController implements Initializable {
+	
+	private static final int DEFAULT_X = 100;
+	private static final int DEFAULT_Y = 100;
+	private static final int DEFAULT_WIDTH = 50; // If items have dimensions
+	private static final int DEFAULT_HEIGHT = 50;
+
 
     @FXML
     private TreeView<FarmComponent> listofFarm;
@@ -130,6 +145,9 @@ public class FarmController implements Initializable {
         listofFarm.setRoot(farm);
 
     }
+    
+    @FXML
+    private AnchorPane visualizationPane;
 
     @FXML
     public void addItem(ActionEvent event) {
@@ -138,14 +156,21 @@ public class FarmController implements Initializable {
             TextInputDialog dialog = new TextInputDialog("New Item");
             dialog.setTitle("Add Item");
             dialog.setHeaderText(null);
-            dialog.setContentText("Please enter the item name:");
+            dialog.setContentText("Enter the item name:");
 
             Optional<String> result = dialog.showAndWait();
             result.ifPresent(name -> {
-                FarmComponent newItem = new Item(name);
+                // Create the new item with default coordinates
+                Item newItem = new Item(name, DEFAULT_X, DEFAULT_Y);
+                
                 if (selectedItem.getValue() instanceof ItemContainer) {
+                    // Add to the selected container
                     ((ItemContainer) selectedItem.getValue()).add(newItem);
                     selectedItem.getChildren().add(new TreeItem<>(newItem));
+
+                    // Add visual representation in the visualizationPane
+                    Circle itemVisual = new Circle(DEFAULT_X, DEFAULT_Y, 10, Color.GREEN);
+                    visualizationPane.getChildren().add(itemVisual);
                 } else {
                     showAlert("Invalid Selection", "You can only add items to an item container.");
                 }
@@ -162,14 +187,23 @@ public class FarmController implements Initializable {
             TextInputDialog dialog = new TextInputDialog("New Item-Container");
             dialog.setTitle("Add Item-Container");
             dialog.setHeaderText(null);
-            dialog.setContentText("Please enter the container name:");
+            dialog.setContentText("Enter the container name:");
 
             Optional<String> result = dialog.showAndWait();
             result.ifPresent(name -> {
-                FarmComponent newItemContainer = new ItemContainer(name);
+                // Create the new item container with default coordinates
+                ItemContainer newContainer = new ItemContainer(name, DEFAULT_X, DEFAULT_Y);
+
                 if (selectedItem.getValue() instanceof ItemContainer) {
-                    ((ItemContainer) selectedItem.getValue()).add(newItemContainer);
-                    selectedItem.getChildren().add(new TreeItem<>(newItemContainer));
+                    // Add to the selected container
+                    ((ItemContainer) selectedItem.getValue()).add(newContainer);
+                    selectedItem.getChildren().add(new TreeItem<>(newContainer));
+
+                    // Add visual representation in the visualizationPane
+                    Rectangle containerVisual = new Rectangle(DEFAULT_X, DEFAULT_Y, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+                    containerVisual.setFill(Color.LIGHTBLUE);
+                    containerVisual.setStroke(Color.BLUE);
+                    visualizationPane.getChildren().add(containerVisual);
                 } else {
                     showAlert("Invalid Selection", "You can only add item containers to an existing container.");
                 }
