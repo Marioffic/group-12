@@ -8,6 +8,7 @@ public class ItemContainer implements FarmComponent {
     private int x, y;
     private int width = 50;
     private int height = 50;
+    private double price;
 
     public ItemContainer(String name, int x, int y) {
         this.name = name;
@@ -31,7 +32,13 @@ public class ItemContainer implements FarmComponent {
         this.height = height;
     }
     
-    
+    public double getPrice() {
+        return price;
+    }
+
+    public void setPrice(double price) {
+        this.price = price;
+    }
 
 
     public ItemContainer(String name) {

@@ -3,6 +3,7 @@ package application;
 public class Item implements FarmComponent {
     private String name;
     private int x, y;
+    private double price;
 
     public Item(String name, int x, int y) {
         this.name = name;
@@ -17,6 +18,13 @@ public class Item implements FarmComponent {
         this.y = y;
     }
 
+    public double getPrice() {
+        return price;
+    }
+
+    public void setPrice(double price) {
+        this.price = price;
+    }
 
     public Item(String name) {
         this.name = name;

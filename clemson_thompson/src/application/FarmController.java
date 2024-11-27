@@ -3,6 +3,7 @@ package application;
 import java.net.URL;
 
 
+
 import java.util.ResourceBundle;
 import java.util.Optional;
 
@@ -24,6 +25,10 @@ import javafx.scene.shape.Circle;
 import javafx.scene.paint.Color;
 import java.util.Map;
 import java.util.HashMap;
+import javafx.scene.control.Label;
+import java.util.List;
+import java.util.ArrayList;
+
 
 
 
@@ -36,7 +41,9 @@ public class FarmController implements Initializable {
 	private static final int DEFAULT_Y = 100;
 	private static final int DEFAULT_WIDTH = 50;
 	private static final int DEFAULT_HEIGHT = 50;
-	private Map<FarmComponent, javafx.scene.Node> componentVisuals = new HashMap<>();
+	// private Map<FarmComponent, javafx.scene.Node> componentVisuals = new HashMap<>();
+	private Map<FarmComponent, List<javafx.scene.Node>> componentVisuals = new HashMap<>();
+
 
 
 
@@ -80,18 +87,15 @@ public class FarmController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // Create the root container "Farm"
+  
         rootContainer = new ItemContainer("Farm");
 
-        // Create the TreeView root node and set the root container as its value
         TreeItem<FarmComponent> rootNode = new TreeItem<>(rootContainer);
-        rootNode.setExpanded(true); // Ensure the root node is always expanded
+        rootNode.setExpanded(true); 
 
-        // Set the TreeView root to the farm root node
         listofFarm.setRoot(rootNode);
         listofFarm.setShowRoot(true);
 
-        // Clear visualization pane (if needed, for consistency)
         visualizationPane.getChildren().clear();
 
         System.out.println("TreeView initialized with only the root 'Farm'.");
@@ -112,18 +116,21 @@ public class FarmController implements Initializable {
 
             Optional<String> result = dialog.showAndWait();
             result.ifPresent(name -> {
-                // Create the new item with default coordinates
                 Item newItem = new Item(name, DEFAULT_X, DEFAULT_Y);
 
                 if (selectedItem.getValue() instanceof ItemContainer) {
-                    // Add to the selected container
                     ((ItemContainer) selectedItem.getValue()).add(newItem);
                     selectedItem.getChildren().add(new TreeItem<>(newItem));
 
-                    // Create the visual representation and store it in the map
                     Circle itemVisual = new Circle(DEFAULT_X, DEFAULT_Y, 10, Color.GREEN);
                     visualizationPane.getChildren().add(itemVisual);
-                    componentVisuals.put(newItem, itemVisual); // Map the item to its visual
+
+                    Label itemLabel = new Label(name);
+                    itemLabel.setLayoutX(DEFAULT_X + 15);
+                    itemLabel.setLayoutY(DEFAULT_Y - 15);
+                    visualizationPane.getChildren().add(itemLabel);
+
+                    componentVisuals.put(newItem, List.of(itemVisual, itemLabel));
                 } else {
                     showAlert("Invalid Selection", "You can only add items to an item container.");
                 }
@@ -144,22 +151,24 @@ public class FarmController implements Initializable {
 
             Optional<String> result = dialog.showAndWait();
             result.ifPresent(name -> {
-                // Create the new item container with default coordinates
                 ItemContainer newContainer = new ItemContainer(name, DEFAULT_X, DEFAULT_Y);
 
                 if (selectedItem.getValue() instanceof ItemContainer) {
-                    // Add to the selected container
                     ((ItemContainer) selectedItem.getValue()).add(newContainer);
                     selectedItem.getChildren().add(new TreeItem<>(newContainer));
 
-                    // Create the visual representation and store it in the map
                     Rectangle containerVisual = new Rectangle(
                         DEFAULT_X, DEFAULT_Y, DEFAULT_WIDTH, DEFAULT_HEIGHT
                     );
                     containerVisual.setFill(Color.LIGHTBLUE);
                     containerVisual.setStroke(Color.BLUE);
                     visualizationPane.getChildren().add(containerVisual);
-                    componentVisuals.put(newContainer, containerVisual); // Map the container to its visual
+
+                    Label containerLabel = new Label(name);
+                    containerLabel.setLayoutX(DEFAULT_X + DEFAULT_WIDTH / 2 - 15);
+                    containerLabel.setLayoutY(DEFAULT_Y - 20);
+                    visualizationPane.getChildren().add(containerLabel);
+                    componentVisuals.put(newContainer, List.of(containerVisual, containerLabel));
                 } else {
                     showAlert("Invalid Selection", "You can only add item containers to an existing container.");
                 }
@@ -169,7 +178,6 @@ public class FarmController implements Initializable {
         }
     }
 
-
     // Method to rename a selected item in the TreeView
     @FXML
     public void renameItem(ActionEvent event) {
@@ -178,17 +186,30 @@ public class FarmController implements Initializable {
             TextInputDialog dialog = new TextInputDialog(selectedItem.getValue().getName());
             dialog.setTitle("Rename Item");
             dialog.setHeaderText(null);
-            dialog.setContentText("Please enter the new name:");
+            dialog.setContentText("Enter the new name:");
 
             Optional<String> result = dialog.showAndWait();
             result.ifPresent(newName -> {
-                selectedItem.getValue().rename(newName);
-                selectedItem.setValue(selectedItem.getValue());
+                FarmComponent component = selectedItem.getValue();
+                component.rename(newName);
+
+                selectedItem.setValue(null);
+                selectedItem.setValue(component);
+
+                List<javafx.scene.Node> visuals = componentVisuals.get(component);
+                if (visuals != null) {
+                    for (javafx.scene.Node node : visuals) {
+                        if (node instanceof Label) {
+                            ((Label) node).setText(newName);
+                        }
+                    }
+                }
             });
         } else {
-            showAlert("No item selected", "Please select an item to rename.");
+            showAlert("No Item Selected", "Please select an item to rename.");
         }
     }
+
 
     // Method to change the location of a selected item
     @FXML
@@ -214,14 +235,20 @@ public class FarmController implements Initializable {
                         ((ItemContainer) selectedComponent).setCoordinates(x, y);
                     }
 
-                    // Update the existing visual
-                    javafx.scene.Node visual = componentVisuals.get(selectedComponent);
-                    if (visual instanceof Circle) {
-                        ((Circle) visual).setCenterX(x);
-                        ((Circle) visual).setCenterY(y);
-                    } else if (visual instanceof Rectangle) {
-                        ((Rectangle) visual).setX(x);
-                        ((Rectangle) visual).setY(y);
+                    List<javafx.scene.Node> visuals = componentVisuals.get(selectedComponent);
+                    if (visuals != null) {
+                        for (javafx.scene.Node visual : visuals) {
+                            if (visual instanceof Circle) {
+                                ((Circle) visual).setCenterX(x);
+                                ((Circle) visual).setCenterY(y);
+                            } else if (visual instanceof Rectangle) {
+                                ((Rectangle) visual).setX(x);
+                                ((Rectangle) visual).setY(y);
+                            } else if (visual instanceof Label) {
+                                ((Label) visual).setLayoutX(x + 15); // Adjust relative position
+                                ((Label) visual).setLayoutY(y - 15);
+                            }
+                        }
                     }
                 } catch (Exception e) {
                     showAlert("Invalid Input", "Please enter valid integer coordinates in the format x,y.");
@@ -229,18 +256,6 @@ public class FarmController implements Initializable {
             });
         } else {
             showAlert("No Item Selected", "Please select an item to change its location.");
-        }
-    }
-
-
-    // Method to change the price of a selected item
-    @FXML
-    private void changePrice(ActionEvent event) {
-        TreeItem<FarmComponent> selectedItem = listofFarm.getSelectionModel().getSelectedItem();
-        if (selectedItem != null) {
-            System.out.println("Changing price for: " + selectedItem.getValue().getName());
-        } else {
-            showAlert("No item selected", "Please select an item to change its price.");
         }
     }
 
@@ -262,15 +277,21 @@ public class FarmController implements Initializable {
                         String[] dimensions = input.split(",");
                         int width = Integer.parseInt(dimensions[0].trim());
                         int height = Integer.parseInt(dimensions[1].trim());
-
                         ItemContainer container = (ItemContainer) selectedItem.getValue();
                         container.setDimensions(width, height);
 
-                        // Update the existing visual
-                        javafx.scene.Node visual = componentVisuals.get(container);
-                        if (visual instanceof Rectangle) {
-                            ((Rectangle) visual).setWidth(width);
-                            ((Rectangle) visual).setHeight(height);
+                        List<javafx.scene.Node> visuals = componentVisuals.get(container);
+                        if (visuals != null) {
+                            for (javafx.scene.Node visual : visuals) {
+                                if (visual instanceof Rectangle) {
+                                    ((Rectangle) visual).setWidth(width);
+                                    ((Rectangle) visual).setHeight(height);
+                                } else if (visual instanceof Label) {
+                                    Label label = (Label) visual;
+                                    label.setLayoutX(container.getX() + width / 2 - 15);
+                                    label.setLayoutY(container.getY() - 20);
+                                }
+                            }
                         }
                     } catch (NumberFormatException e) {
                         showAlert("Invalid Input", "Please enter valid integer dimensions in the format width,height.");
@@ -284,6 +305,46 @@ public class FarmController implements Initializable {
         }
     }
 
+    @FXML
+    private void changePrice(ActionEvent event) {
+        TreeItem<FarmComponent> selectedItem = listofFarm.getSelectionModel().getSelectedItem();
+
+        if (selectedItem != null) {
+            FarmComponent selectedComponent = selectedItem.getValue();
+            if (selectedComponent instanceof Item || selectedComponent instanceof ItemContainer) {
+                TextInputDialog dialog = new TextInputDialog();
+                dialog.setTitle("Change Price");
+                dialog.setHeaderText(null);
+                dialog.setContentText("Enter the new price:");
+
+                Optional<String> result = dialog.showAndWait();
+                result.ifPresent(input -> {
+                    try {
+                        double newPrice = Double.parseDouble(input.trim());
+                        if (newPrice < 0) {
+                            showAlert("Invalid Input", "The price cannot be negative.");
+                            return;
+                        }
+
+                        if (selectedComponent instanceof Item) {
+                            ((Item) selectedComponent).setPrice(newPrice);
+                        } else if (selectedComponent instanceof ItemContainer) {
+                            ((ItemContainer) selectedComponent).setPrice(newPrice);
+                        }
+
+                        System.out.println("Price updated to: " + newPrice);
+
+                    } catch (NumberFormatException e) {
+                        showAlert("Invalid Input", "Please enter a valid number for the price.");
+                    }
+                });
+            } else {
+                showAlert("Invalid Selection", "The selected component cannot have its price changed.");
+            }
+        } else {
+            showAlert("No Item Selected", "Please select an item or container to change its price.");
+        }
+    }
 
     // Method to delete a selected item from the TreeView
     @FXML
@@ -291,20 +352,40 @@ public class FarmController implements Initializable {
         TreeItem<FarmComponent> selectedItem = listofFarm.getSelectionModel().getSelectedItem();
 
         if (selectedItem != null && selectedItem.getParent() != null) {
-            if (selectedItem.getParent().getValue() instanceof ItemContainer) {
-                ItemContainer parentContainer = (ItemContainer) selectedItem.getParent().getValue();
-                parentContainer.remove(selectedItem.getValue());
+            FarmComponent component = selectedItem.getValue();
+            if (component instanceof ItemContainer) {
+                deleteContainerContents((ItemContainer) component);
             }
 
-            javafx.scene.Node visual = componentVisuals.remove(selectedItem.getValue());
-            if (visual != null) {
-                visualizationPane.getChildren().remove(visual);
+            if (selectedItem.getParent().getValue() instanceof ItemContainer) {
+                ItemContainer parentContainer = (ItemContainer) selectedItem.getParent().getValue();
+                parentContainer.remove(component);
+            }
+
+            List<javafx.scene.Node> visuals = componentVisuals.remove(component);
+            if (visuals != null) {
+                visuals.forEach(visualizationPane.getChildren()::remove);
             }
 
             selectedItem.getParent().getChildren().remove(selectedItem);
         } else {
             showAlert("No Item Selected", "Please select an item to delete.");
         }
+    }
+
+    private void deleteContainerContents(ItemContainer container) {
+        for (FarmComponent child : container.getChildren()) {
+            if (child instanceof ItemContainer) {
+                deleteContainerContents((ItemContainer) child);
+            }
+
+            List<javafx.scene.Node> visuals = componentVisuals.remove(child);
+            if (visuals != null) {
+                visuals.forEach(visualizationPane.getChildren()::remove);
+            }
+        }
+
+        container.getChildren().clear();
     }
 
     @FXML
@@ -325,60 +406,101 @@ public class FarmController implements Initializable {
 
     private void renderComponent(FarmComponent component) {
         if (component instanceof Item) {
-            // Render Item as a circle
             Item item = (Item) component;
 
-            // Get the existing visual from the map
-            Circle itemVisual = (Circle) componentVisuals.get(component);
-            if (itemVisual == null) {
-                // Create a new circle if not already present
-                itemVisual = new Circle(item.getX(), item.getY(), 10, Color.GREEN);
-                componentVisuals.put(component, itemVisual);
-                visualizationPane.getChildren().add(itemVisual);
-            } else {
-                // Update the existing circle's position
-                itemVisual.setCenterX(item.getX());
-                itemVisual.setCenterY(item.getY());
-                // Ensure the visual is added to the pane
-                if (!visualizationPane.getChildren().contains(itemVisual)) {
-                    visualizationPane.getChildren().add(itemVisual);
+            List<javafx.scene.Node> visuals = componentVisuals.get(component);
+            Circle itemVisual = null;
+            Label itemLabel = null;
+
+            if (visuals != null) {
+                for (javafx.scene.Node visual : visuals) {
+                    if (visual instanceof Circle) {
+                        itemVisual = (Circle) visual;
+                    } else if (visual instanceof Label) {
+                        itemLabel = (Label) visual;
+                    }
                 }
+            } else {
+                visuals = new ArrayList<>();
             }
 
+            if (itemVisual == null) {
+                itemVisual = new Circle(item.getX(), item.getY(), 10, Color.GREEN);
+                visuals.add(itemVisual);
+                visualizationPane.getChildren().add(itemVisual);
+            } else {
+                itemVisual.setCenterX(item.getX());
+                itemVisual.setCenterY(item.getY());
+            }
+
+            if (itemLabel == null) {
+                itemLabel = new Label(item.getName());
+                itemLabel.setLayoutX(item.getX() + 15);
+                itemLabel.setLayoutY(item.getY() - 15);
+                visuals.add(itemLabel);
+                visualizationPane.getChildren().add(itemLabel);
+            } else {
+                itemLabel.setLayoutX(item.getX() + 15);
+                itemLabel.setLayoutY(item.getY() - 15);
+                itemLabel.setText(item.getName());
+            }
+
+            componentVisuals.put(component, visuals);
+
         } else if (component instanceof ItemContainer) {
-            // Render ItemContainer as a rectangle
             ItemContainer container = (ItemContainer) component;
 
-            // Get the existing visual from the map
-            Rectangle containerVisual = (Rectangle) componentVisuals.get(component);
+            List<javafx.scene.Node> visuals = componentVisuals.get(component);
+            Rectangle containerVisual = null;
+            Label containerLabel = null;
+
+            if (visuals != null) {
+                for (javafx.scene.Node visual : visuals) {
+                    if (visual instanceof Rectangle) {
+                        containerVisual = (Rectangle) visual;
+                    } else if (visual instanceof Label) {
+                        containerLabel = (Label) visual;
+                    }
+                }
+            } else {
+                visuals = new ArrayList<>();
+            }
+
             if (containerVisual == null) {
-                // Create a new rectangle if not already present
                 containerVisual = new Rectangle(
-                    container.getX(), container.getY(), container.getWidth(), container.getHeight()
+                    container.getX(), container.getY(),
+                    container.getWidth(), container.getHeight()
                 );
                 containerVisual.setFill(Color.LIGHTBLUE);
                 containerVisual.setStroke(Color.BLUE);
-                componentVisuals.put(component, containerVisual);
+                visuals.add(containerVisual);
                 visualizationPane.getChildren().add(containerVisual);
             } else {
-                // Update the existing rectangle's position and size
                 containerVisual.setX(container.getX());
                 containerVisual.setY(container.getY());
                 containerVisual.setWidth(container.getWidth());
                 containerVisual.setHeight(container.getHeight());
-                // Ensure the visual is added to the pane
-                if (!visualizationPane.getChildren().contains(containerVisual)) {
-                    visualizationPane.getChildren().add(containerVisual);
-                }
             }
 
-            // Recursively render children
+            if (containerLabel == null) {
+                containerLabel = new Label(container.getName());
+                containerLabel.setLayoutX(container.getX() + container.getWidth() / 2 - 15);
+                containerLabel.setLayoutY(container.getY() - 20);
+                visuals.add(containerLabel);
+                visualizationPane.getChildren().add(containerLabel);
+            } else {
+                containerLabel.setLayoutX(container.getX() + container.getWidth() / 2 - 15);
+                containerLabel.setLayoutY(container.getY() - 20);
+                containerLabel.setText(container.getName());
+            }
+
+            componentVisuals.put(component, visuals);
+
             for (FarmComponent child : container.getChildren()) {
                 renderComponent(child);
             }
         }
     }
-
 
     // Method to handle drone actions based on radio button selection
     @FXML
